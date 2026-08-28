@@ -1,0 +1,67 @@
+import math
+import json
+import re
+from pathlib import Path
+
+
+def tokenize_query(query: str) -> list:
+    # MUST match ingest.py's tokenize() logic, or matches get missed
+    # (e.g. if ingest.py starts stemming, this needs to stem too).
+    return re.findall(r"[a-z0-9]+", query.lower())
+
+
+def search(query: str, index: dict, metadata: dict, top_k: int = 5) -> list:
+    """
+    TODO (core task): implement the TF-IDF scoring loop described
+    above. Steps:
+      1. Tokenize the query with tokenize_query().
+      2. For each query term that exists in `index`:
+           - get its postings: {doc_id: term_frequency}
+           - compute idf = log((total_docs + 1) / (num_docs_with_term + 1)) + 1
+             (the +1s avoid division-by-zero / log(0) edge cases)
+           - for each doc_id in postings, add tf * idf to that doc's score
+      3. Sort docs by total score, descending, return top_k.
+
+    Below is a working reference implementation — but before you run
+    it as-is, comment it out and try writing steps 1-3 yourself first.
+    You'll understand your own project much better in the demo Q&A.
+    """
+    query_terms = tokenize_query(query)
+    total_docs = len(metadata)
+    scores = {}
+
+    for term in query_terms:
+        if term not in index:
+            continue
+        postings = index[term]  # {doc_id: tf}
+        idf = math.log((total_docs + 1) / (len(postings) + 1)) + 1
+
+        for doc_id, tf in postings.items():
+            scores[doc_id] = scores.get(doc_id, 0) + tf * idf
+
+    ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    results = []
+    for doc_id, score in ranked[:top_k]:
+        meta = metadata[doc_id]
+        results.append((doc_id, round(score, 3), meta["title"], meta["path"]))
+    return results
+
+    # TODO (stretch, if core TF-IDF works with time to spare): upgrade
+    # to BM25, which real search engines use. It's TF-IDF plus two
+    # improvements: (a) diminishing returns for repeated words (a doc
+    # saying "python" 50 times isn't 50x more relevant than saying it
+    # once), and (b) length normalization (long docs naturally contain
+    # more words, so raw counts unfairly favor them).
+    #
+    #   k1, b = 1.5, 0.75   # standard defaults, don't worry about tuning
+    #   score += idf * (tf * (k1 + 1)) / (tf + k1 * (1 - b + b * doc_len / avg_doc_len))
+
+
+if __name__ == "__main__":
+    import sys
+
+    index = json.loads(Path("index.json").read_text())
+    metadata = json.loads(Path("metadata.json").read_text())
+    query = " ".join(sys.argv[1:]) or "test query"
+    for doc_id, score, title, path in search(query, index, metadata):
+        print(f"[{score}] {title}  ({path})")
