@@ -1,2 +1,2 @@
 # Offline-Knowledge-Engine
-Zero dependency offline knbowledge and search engine
+Zero dependency offline knowledge and search engine
