@@ -1,0 +1,27 @@
+T1 — Document Ingestion
+
+T1 is responsible for the document ingestion pipeline. The main task is to discover and read supported files from the given directory, extract their text, clean and normalize the content, and divide large documents into smaller chunks.
+
+T1 will provide the cleaned and structured document data to T3 (Index & Storage) for indexing.
+
+Responsibilities:
+
+Find supported files in the given directory.
+Read and extract text from supported file formats.
+Clean and normalize extracted text.
+Split large documents into suitable chunks.
+Preserve useful metadata such as file name and document path.
+Handle unsupported files and file-reading errors properly.
+Provide a clear and consistent data format/interface for T3.
+
+Input:
+
+Directory containing documents
+
+Output:
+
+Clean, structured document chunks + metadata
+
+Flow:
+
+Documents → File Discovery → Text Extraction → Cleaning → Chunking → T3
